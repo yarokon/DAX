@@ -25,9 +25,9 @@ function showSize() {
   offset.top = gameField.offsetTop + border;
 }
 
-svgField.addEventListener('mousemove', showcoords);
+svgField.addEventListener('mousemove', showCoords);
 
-function showcoords(event) {
+function showCoords(event) {
   coords.x = Math.round(event.pageX - offset.left);
   coords.y = Math.round(event.pageY - offset.top);
   demo.innerHTML = coords.x + ' ' + coords.y;
@@ -70,18 +70,18 @@ for (i = 5; i <= 505; i+=50) {
 /*********************************************************/
 
 nextPoint = (function () {
-  var pointId = 1;
+  var pointId = 0;
   return function(reset) {
     if (reset) {
-      pointId = 0;
+      pointId = -1;
     }
     return pointId++;
   };
 })();
 
 function Point(x, y) {
-  this.x = x;
-  this.y = y;
+  this.x = +x;
+  this.y = +y;
   this.xy = function() {
     return this.x + ' ' + this.y;
   };
@@ -89,17 +89,18 @@ function Point(x, y) {
 }
 
 var arrPoints = [];
+var arrLines = [];
 
 function Vector(x, y) {
-  this.x = x;
-  this.y = y;
+  this.x = +x;
+  this.y = +y;
 }
 
-function Line(p1, p2, vn, vt) {
+function Line(p1, p2, vt, vn) {
   this.p1 = p1;
   this.p2 = p2;
-  this.vn = vn;
   this.vt = vt;
+  this.vn = vn;
 }
 
 /*********************************************************/
@@ -109,7 +110,7 @@ var newPolygon = polygon.cloneNode();
 var dashLine = polygon.cloneNode();
 dashLine.id = 'dash-line';
 
-var circleArr = [];
+var arrCircles = [];
 
 var startDrawing = false;
 var endDrawing = false;
@@ -123,24 +124,23 @@ function drawPolygon(event) {
     var x = circleTarget.getAttribute('cx');
     var y = circleTarget.getAttribute('cy');
 
-    circleTarget.style.r = 4;
-    circleTarget.style.fill = '#ff9800';
-    circleArr.push(circleTarget);
-
     if (!startDrawing) {
       newPolygon.setAttribute('d', 'M'.concat(x, ' ', y));
       svgField.appendChild(newPolygon);
       svgField.appendChild(dashLine);
 
-      circleTarget.style.r = 5;
+      circleTarget.setAttribute('r', 4);
       arrPoints.push(new Point(x, y));
       startDrawing = true;
     } else {
       newPolygon.attributes[0].value += ' L'.concat(x, ' ', y);
+      circleTarget.style.r = 4;
       arrPoints.push(new Point(x, y));
       closePath(arrPoints);
     }
 
+    circleTarget.style.fill = '#ff9800';
+    arrCircles.push(circleTarget);
     svgField.appendChild(circleTarget);
   }
 }
@@ -184,33 +184,116 @@ function eraseAll(event) {
     arrPoints = [];
     nextPoint(true);
 
-    circleArr.forEach(function(item) {
+    arrCircles[0].setAttribute('r', 3);
+    arrCircles.forEach(function(item) {
       item.style = '';
     });
-    circleArr = [];
+    arrCircles = [];
 
     startDrawing = endDrawing = false;
   }
 }
 
-svgField.addEventListener('mousemove', showDash);
+var regExpPlatforms = /Android|webOS|iPhone|Windows Phone/i;
+var isMobile = regExpPlatforms.test(navigator.userAgent);
+
+if (!isMobile) {
+  svgField.addEventListener('mousemove', showDash);
+}
 
 function showDash(event) {
   if (!endDrawing) {
     var arrLength = arrPoints.length;
 
     if (arrLength) {
-      var xm = coords.x;
-      var ym = coords.y;
-      var xp = arrPoints[arrLength - 1].x;
-      var yp = arrPoints[arrLength - 1].y;
-      var dx = xp - xm;
-      var dy = yp - ym;
-      var d = Math.sqrt(dx * dx + dy * dy);
-      var cosA = dx / (d + 1e-3);
-      var sinA = dy / (d + 1e-3);
+      var point = arrPoints[arrLength - 1];
+      var vec = projection(coords, point);
 
-      dashLine.setAttribute('d', 'M'.concat(xp, ' ', yp, ' L', Math.round(xm + 5 * cosA), ' ', Math.round(ym + 5 * sinA)));
+      dashLine.setAttribute('d', 'M'.concat(point.x, ' ', point.y, ' L',
+        Math.round(coords.x + 5 * vec.x),' ', Math.round(coords.y + 5 * vec.y)));
     }
+  }
+}
+
+/*********************************************************/
+
+function projection (a, b) {
+  var dx = b.x - a.x;
+  var dy = b.y - a.y;
+  var d = Math.sqrt(dx * dx + dy * dy);
+  var cosA = roundNumber(dx / (d + 1e-3), 3);
+  var sinA = roundNumber(dy / (d + 1e-3), 3);
+  return new Vector(cosA, sinA);
+}
+
+function roundNumber(value, precision) {
+  precision = precision || 1;
+  var power = Math.pow(10, precision);
+  return Math.round(value * power) / power;
+}
+
+function determinant (a, b) {
+  return a.x * b.y - b.x * a.y;
+}
+
+function nextItem (index, arr) {
+  return arr.length - 1 === index ? arr[0] : arr[index + 1];
+}
+
+document.body.addEventListener('keydown', calculate);
+
+function calculate(event) {
+  if (event.key === ' ' && endDrawing) {
+    arrLines = arrPoints.map(function(point, index, arr){
+      var nextPoint = nextItem(index, arr);
+      return new Line (point, nextPoint, projection(point, nextPoint));
+    });
+
+    var anglesSum = arrLines.reduce(function(total, line, index, arr){
+      var nextLine = nextItem(index, arr);
+      return total + 90 * determinant(line.vt, nextLine.vt);
+    }, 0);
+
+    var sinA;
+    switch (anglesSum) {
+      case 360:
+        sinA = 1;
+        break;
+      case -360:
+        sinA = -1;
+        break;
+      default:
+        sinA = 0;
+        console.log('Error');
+    }
+
+    arrLines.forEach(function(line){
+      var x = line.vt.y * -sinA;
+      var y = line.vt.x * sinA;
+      line.vn = new Vector(x, y);
+    });
+
+    var deletedPoints = [];
+
+    arrLines.forEach(function(line, index, arr){
+      var nextLine = nextItem(index, arr);
+
+      while (line.vt.x === nextLine.vt.x && line.vt.y === nextLine.vt.y) {
+        deletedPoints.push(line.p2.pId);
+        line.p2 = nextLine.p2;
+        arr.splice(index + 1, 1);
+        nextLine = nextItem(index, arr);
+      }
+    });
+
+    arrPoints = arrLines.map(function(line) {
+      return line.p1;
+    });
+
+    deletedPoints.forEach(function(point, index) {
+      arrCircles[point].style.r = 0;
+    });
+
+    console.log(arrLines);
   }
 }

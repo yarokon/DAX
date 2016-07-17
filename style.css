@@ -25,14 +25,14 @@ svg > line {
 svg > circle {
   fill: #9E9E9E;
   transition: all 0.2s;
-  stroke-width: 5px;
+  stroke-width: 16px;
   stroke: transparent;
 }
 
 svg > circle:hover {
   r: 5px;
   fill: #ff9800;
-  stroke-width: 0;
+  stroke-width: 12px;
 }
 
 svg > path {
