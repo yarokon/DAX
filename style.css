@@ -1,20 +1,24 @@
 div#field {
-  width: 510px;
-  height: 510px;
+  width: 520px;
+  height: 520px;
   margin: auto;
   padding: 0;
   background: rgba(33, 150, 243, 0.43);
   border: 5px solid #795548;
+  cursor: crosshair;
 }
 
-samp#demo {
-  position: fixed;
-  left: 0;
-  top: 0;
-  width: 51px;
-  margin: 20px;
-  padding: 10px;
-  border: 2px solid gray;
+@media screen and (min-width: 775px) {
+  samp#demo {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 51px;
+    margin: 20px;
+    padding: 10px;
+    border: 2px solid gray;
+    display: block;
+  }
 }
 
 svg > line {
@@ -22,17 +26,22 @@ svg > line {
  stroke-width: 2px;
 }
 
+svg > line.edge {
+ stroke: #ff9800;
+ stroke-width: 3px;
+}
+
 svg > circle {
   fill: #9E9E9E;
   transition: all 0.2s;
-  stroke-width: 16px;
+  stroke-width: 30px;
   stroke: transparent;
 }
 
 svg > circle:hover {
-  r: 5px;
+  r: 6px;
   fill: #ff9800;
-  stroke-width: 12px;
+  stroke-width: 24px;
 }
 
 svg > path {

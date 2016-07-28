@@ -5,21 +5,23 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>DAX beta 1.0</title>
   <link rel="stylesheet" href="style.css">
+  <script src="lodash/lodash.min.js" async></script>
   <script src="main.js" async></script>
 </head>
 
 <body>
 <div id="field">
-  <svg width="510" height="510"></svg>
+  <svg width="520" height="520"></svg>
 </div>
 
-<samp id="demo">0 0</samp>
+<samp id="demo" hidden>0 0</samp>
 
 <svg id="draft">
-  <line x1="5" y1="55" x2="505" y2="55" />
-  <circle cx="5" cy="5" r="3" />
+  <line x1="10" y1="60" x2="510" y2="60" />
+  <circle cx="10" cy="10" r="3" />
   <path d="M0 0" />
-  <line x1="55" y1="5" x2="55" y2="505" />
+  <line class="edge" />
+  <line x1="60" y1="10" x2="60" y2="510" />
 </svg>
 </body>
 </html>
